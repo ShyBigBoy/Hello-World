@@ -1,0 +1,74 @@
+apply plugin: 'com.android.application'
+
+android {
+    signingConfigs {
+        config {
+            //加载资源
+            Properties properties = new Properties()
+            InputStream inputStream = project.rootProject.file('local.properties').newDataInputStream() ;
+            properties.load( inputStream )
+
+            //读取字段
+            def key_storeFile = properties.getProperty('storeFile')
+            def key_keyAlias = properties.getProperty( 'keyAlias' )
+            def key_keyPassword = properties.getProperty( 'keyPassword' ) ;
+            def key_storePassword = properties.getProperty( 'storePassword' ) ;
+
+            storeFile file(key_storeFile)
+            keyAlias key_keyAlias
+            keyPassword key_keyPassword
+            storePassword key_storePassword
+        }
+    }
+    compileSdkVersion 21
+    buildToolsVersion '25.0.0'
+    defaultConfig {
+        applicationId "com.eason.helloffmpeg"
+        minSdkVersion 15
+        targetSdkVersion 21
+        versionCode 1
+        versionName "1.0"
+
+        /*ndk {
+            moduleName "ffmpeghelloworld"
+            ldLibs "log", "z", "m"
+            abiFilters "armeabi", "armeabi-v7a"
+        }*/
+    }
+
+    //ndk-build with specified Android.mk and Application.mk
+    sourceSets {
+        main {
+            jni.srcDirs = [] //disable gradle automatic ndk-build call
+        }
+    }
+    task ndkBuild(type: Exec, description: 'Compile JNI source via NDK') {
+        commandLine '/data/myTools/android-ndk-r14b/ndk-build',
+                'NDK_PROJECT_PATH=src/main',
+                'NDK_LIBS_OUT=$(NDK_PROJECT_PATH)/jniLibs'
+                //'APP_BUILD_SCRIPT=$(NDK_PROJECT_PATH)/jni/Android.mk',//use default
+                //'NDK_APPLICATION_MK=$(NDK_PROJECT_PATH)/jni/Application.mk'
+    }
+    tasks.withType(JavaCompile){
+        compileTask->compileTask.dependsOn ndkBuild
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+        }
+    }
+    /*externalNativeBuild {
+        cmake {
+            path "CMakeLists.txt"
+        }
+    }*/
+    productFlavors {
+    }
+}
+
+dependencies {
+}
